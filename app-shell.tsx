@@ -46,18 +46,30 @@ const NAV = [
   },
 ] as const;
 
+/* =========================================================
+   SMART POINT WHOP USER
+   ========================================================= */
+
+export type SmartPointWhopUser = WhopUser & {
+  isAuthenticated: boolean;
+};
+
 /**
- * The member comes from Whop:
- * server-resolved when embedded, URL/local fallback in preview.
+ * Returns the current Smart Point user.
  *
- * Favorites and downloads are keyed on this id.
+ * identity.data = real Whop authentication
+ *
+ * fallback = local/display fallback only.
+ *
+ * IMPORTANT:
+ * A fallback user is NEVER considered authenticated.
  */
-export function useWhopUser(): WhopUser {
+export function useWhopUser(): SmartPointWhopUser {
   const [fallback, setFallback] =
     useState<WhopUser>({
       id: "whop-preview-user",
-      name: "Member",
-      plan: "Premium Member",
+      name: "Visitor",
+      plan: "Free Visitor",
     });
 
   useEffect(() => {
@@ -80,289 +92,402 @@ export function useWhopUser(): WhopUser {
     }
   }, [identity.data]);
 
-  return identity.data ?? fallback;
-}
-
-function NotificationsBell() {
-  const [open, setOpen] = useState(false);
-  const [seenAt, setSeenAt] =
-    useState<string | null>(null);
-
-  const wrapper =
-    useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setSeenAt(getSeenAt());
-  }, []);
-
-  useEffect(() => {
-    function onClick(event: MouseEvent) {
-      if (
-        !wrapper.current?.contains(
-          event.target as Node,
-        )
-      ) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener(
-      "mousedown",
-      onClick,
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        onClick,
-      );
+  /*
+   * REAL WHOP USER
+   */
+  if (identity.data) {
+    return {
+      ...identity.data,
+      isAuthenticated: true,
     };
-  }, []);
+  }
 
-  const alerts = useQuery(
-    newTemplatesQuery(seenAt),
-  );
-
-  const categories = useQuery(
-    categoriesQuery(),
-  );
-
-  const list = alerts.data ?? [];
-
-  return (
-    <div
-      className="relative"
-      ref={wrapper}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label="Notifications"
-        onClick={() => {
-          setOpen((value) => !value);
-
-          if (!open) {
-            markNotificationsSeen();
-          }
-        }}
-        className="relative rounded-full text-muted-foreground hover:text-foreground"
-      >
-        <Bell className="h-5 w-5" />
-
-        {list.length > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-            {list.length}
-          </span>
-        )}
-      </Button>
-
-      {open && (
-        <div className="panel absolute right-0 top-12 z-40 w-[288px] overflow-hidden p-0 shadow-card">
-          <p className="border-b border-border px-4 py-3 text-sm font-semibold">
-            Notifications
-          </p>
-
-          {list.length === 0 ? (
-            <p className="px-4 py-5 text-xs text-muted-foreground">
-              You are up to date. We will let
-              you know when a category gets 10
-              new templates.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {list.map((alert) => {
-                const category =
-                  categories.data?.find(
-                    (item) =>
-                      item.id ===
-                      alert.categoryId,
-                  );
-
-                return (
-                  <li
-                    key={alert.categoryId}
-                    className="flex items-center gap-3 px-4 py-3"
-                  >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
-                      <CategoryIcon
-                        name={
-                          category?.icon ??
-                          "briefcase"
-                        }
-                        className="h-4 w-4"
-                      />
-                    </span>
-
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">
-                        {category?.name ??
-                          "New templates"}
-                      </span>
-
-                      <span className="block text-xs text-muted-foreground">
-                        {alert.count} new
-                        templates added
-                      </span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  /*
+   * EXTERNAL VISITOR
+   */
+  return {
+    ...fallback,
+    isAuthenticated: false,
+  };
 }
+
+/* =========================================================
+   APP SHELL
+   ========================================================= */
 
 export function AppShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = useRouterState({
-    select: (s) => s.location.pathname,
-  });
+  const routerState = useRouterState();
 
   const user = useWhopUser();
 
+  const categories = useQuery(
+    categoriesQuery(),
+  );
+
+  const newTemplates = useQuery(
+    newTemplatesQuery(),
+  );
+
+  const [notificationsOpen, setNotificationsOpen] =
+    useState(false);
+
+  const notificationsRef =
+    useRef<HTMLDivElement>(null);
+
+  const [searchOpen, setSearchOpen] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  const pathname =
+    routerState.location.pathname;
+
+  const seenAt = getSeenAt();
+
+  const unseenCount =
+    (newTemplates.data ?? []).filter(
+      (template) => {
+        if (!seenAt) return true;
+
+        return (
+          new Date(
+            template.created_at,
+          ).getTime() >
+          seenAt
+        );
+      },
+    ).length;
+
+  useEffect(() => {
+    function handleOutsideClick(
+      event: MouseEvent,
+    ) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setNotificationsOpen(false);
+      }
+    }
+
+    if (notificationsOpen) {
+      document.addEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+    }
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
+    };
+  }, [notificationsOpen]);
+
+  function handleOpenNotifications() {
+    setNotificationsOpen(
+      (current) => !current,
+    );
+
+    if (unseenCount > 0) {
+      markNotificationsSeen();
+    }
+  }
+
+  function handleSearchSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    const value =
+      searchQuery.trim();
+
+    if (!value) return;
+
+    window.location.href =
+      `/?search=${encodeURIComponent(value)}`;
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 flex h-[68px] items-center gap-4 border-b border-border bg-sidebar/95 px-4 backdrop-blur-xl lg:px-6">
-        <Link
-          to="/"
-          className="flex shrink-0 items-center gap-3"
-        >
-          <img
-            src={logoAsset}
-            alt="Smart Point"
-            className="h-11 w-11 rounded-full object-cover shadow-glow"
-          />
+      {/* ===================================================
+          HEADER
+          =================================================== */}
 
-          <span className="hidden leading-tight sm:block">
-            <span className="block text-base font-extrabold tracking-wide">
-              SMART{" "}
-              <span className="text-primary">
-                POINT
-              </span>
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-[1800px] items-center gap-4 px-4 lg:px-6">
+          {/* LOGO */}
+
+          <Link
+            to="/"
+            className="flex shrink-0 items-center gap-2"
+          >
+            <img
+              src={logoAsset}
+              alt="Smart Point"
+              className="h-9 w-auto"
+            />
+
+            <span className="hidden text-lg font-bold sm:block">
+              Smart Point
             </span>
+          </Link>
 
-            <span className="block text-[11px] text-muted-foreground">
-              Premium PowerPoint Templates
-            </span>
-          </span>
-        </Link>
+          {/* SEARCH */}
 
-        <form
-          className="relative mx-auto hidden w-full max-w-2xl md:block"
-          onSubmit={(event) =>
-            event.preventDefault()
-          }
-          role="search"
-        >
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <form
+            onSubmit={handleSearchSubmit}
+            className="hidden min-w-0 flex-1 md:block"
+          >
+            <div className="relative mx-auto max-w-xl">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-          <input
-            type="search"
-            placeholder="Search templates or categories..."
-            className="h-11 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
-            onChange={(event) => {
-              const value = event.target.value;
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(
+                    event.target.value,
+                  )
+                }
+                placeholder="Search templates..."
+                className="h-10 w-full rounded-lg border border-border bg-muted/30 pl-9 pr-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </form>
 
-              window.dispatchEvent(
-                new CustomEvent(
-                  "smartpoint:search",
-                  {
-                    detail: value,
-                  },
-                ),
-              );
-            }}
-          />
-        </form>
+          {/* NAVIGATION */}
 
-        <div className="ml-auto flex items-center gap-3 sm:gap-4">
-          <NotificationsBell />
+          <nav className="hidden items-center gap-1 lg:flex">
+            {NAV.map(
+              ({
+                to,
+                label,
+                icon: Icon,
+              }) => {
+                const active =
+                  pathname === to;
 
-          <ThemeToggle />
-
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-sm font-semibold">
-              {user.name
-                .slice(0, 1)
-                .toUpperCase()}
-            </span>
-
-            <span className="hidden leading-tight sm:block">
-              <span className="block text-sm font-semibold">
-                {user.name}
-              </span>
-
-              <span className="block text-[11px] text-muted-foreground">
-                ⭐ {user.plan}
-              </span>
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        <nav className="sticky top-[68px] hidden h-[calc(100vh-68px)] w-[232px] shrink-0 border-r border-border bg-sidebar p-4 lg:block">
-          <ul className="space-y-1.5">
-            {NAV.map((item) => {
-              const active =
-                pathname === item.to;
-
-              return (
-                <li key={item.to}>
+                return (
                   <Link
-                    to={item.to}
+                    key={to}
+                    to={to}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3.5 py-3 text-sm font-medium transition-colors",
+                      "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       active
-                        ? "bg-primary text-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent",
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <item.icon className="h-[18px] w-[18px]" />
+                    <Icon className="h-4 w-4" />
 
-                    {item.label}
+                    {label}
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                );
+              },
+            )}
+          </nav>
 
-        <main className="min-w-0 flex-1 pb-16">
-          {children}
-        </main>
+          {/* RIGHT SIDE */}
+
+          <div className="ml-auto flex items-center gap-2">
+            {/* MOBILE SEARCH */}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() =>
+                setSearchOpen(
+                  (current) => !current,
+                )
+              }
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+
+            {/* NOTIFICATIONS */}
+
+            <div
+              ref={notificationsRef}
+              className="relative"
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={
+                  handleOpenNotifications
+                }
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+
+                {unseenCount > 0 && (
+                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                    {unseenCount > 9
+                      ? "9+"
+                      : unseenCount}
+                  </span>
+                )}
+              </Button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+                  <div className="border-b border-border p-4">
+                    <h3 className="font-semibold">
+                      Notifications
+                    </h3>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      New Smart Point templates
+                    </p>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto">
+                    {(newTemplates.data ?? [])
+                      .slice(0, 8)
+                      .map(
+                        (template) => (
+                          <Link
+                            key={
+                              template.id
+                            }
+                            to="/"
+                            className="block border-b border-border p-4 transition hover:bg-muted/50"
+                            onClick={() =>
+                              setNotificationsOpen(
+                                false,
+                              )
+                            }
+                          >
+                            <p className="text-sm font-medium">
+                              {template.title}
+                            </p>
+
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              New template
+                              available
+                            </p>
+                          </Link>
+                        ),
+                      )}
+
+                    {(
+                      newTemplates.data ??
+                      []
+                    ).length === 0 && (
+                      <div className="p-6 text-center text-sm text-muted-foreground">
+                        No new templates.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* THEME */}
+
+            <ThemeToggle />
+
+            {/* USER */}
+
+            <div className="hidden items-center gap-2 border-l border-border pl-3 sm:flex">
+              <div className="min-w-0 text-right">
+                <p className="max-w-[140px] truncate text-sm font-medium">
+                  {user.name}
+                </p>
+
+                <p className="text-xs text-muted-foreground">
+                  {user.isAuthenticated
+                    ? `⭐ ${user.plan}`
+                    : "Visitor"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE SEARCH */}
+
+        {searchOpen && (
+          <div className="border-t border-border px-4 py-3 md:hidden">
+            <form
+              onSubmit={handleSearchSubmit}
+            >
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                <input
+                  autoFocus
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Search templates..."
+                  className="h-10 w-full rounded-lg border border-border bg-muted/30 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </form>
+          </div>
+        )}
+      </header>
+
+      {/* ===================================================
+          MOBILE NAVIGATION
+          =================================================== */}
+
+      <div className="border-b border-border lg:hidden">
+        <nav className="mx-auto flex max-w-[1800px] items-center gap-1 overflow-x-auto px-4 py-2">
+          {NAV.map(
+            ({
+              to,
+              label,
+              icon: Icon,
+            }) => {
+              const active =
+                pathname === to;
+
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+
+                  {label}
+                </Link>
+              );
+            },
+          )}
+        </nav>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-border bg-sidebar lg:hidden">
-        {NAV.map((item) => {
-          const active =
-            pathname === item.to;
+      {/* ===================================================
+          MAIN
+          =================================================== */}
 
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-3 text-[11px]",
-                active
-                  ? "text-primary"
-                  : "text-muted-foreground",
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <main className="mx-auto max-w-[1800px]">
+        {children}
+      </main>
     </div>
   );
 }
