@@ -1,0 +1,234 @@
+C:\SMART POINT\app>type node_modules\@whop\elements-react\index.d.ts
+import type { ReactNode } from "react";
+import type { Whop, WhopConstructor, WhopGlobalConfig } from "@whop/elements";
+
+/** Props for `<WhopElements>`: the SDK (or its loader promise) plus the global config every namespace inherits (appearance, locale, ÔÇª). */
+export interface WhopElementsProps extends WhopGlobalConfig {
+        /** The subtree that can use Whop Elements. Every component and hook must render below this provider. */
+        children: ReactNode;
+        /** The loaded constructor, or a promise of it (e.g. `loadWhop()` from the vanilla package). `null` defers initialization; `undefined` throws. */
+        elements: WhopConstructor | Promise<WhopConstructor | null> | null;
+        /** Called when the SDK fails to load. With it set the provider does not throw: the subtree stays mounted with its elements still loading, and `retry()` starts a fresh load in place ÔÇö from a button, or your own backoff. Without it the error reaches the nearest error boundary. */
+        onLoadError?: (error: Error, retry: () => void) => void;
+}
+
+/** The app-level provider: put it once above everything that uses Whop Elements and hand it the SDK via `elements={loadWhop()}`. */
+export declare function WhopElements(props: WhopElementsProps): ReactNode;
+
+/** The resolved `Whop` instance, or `null` while the loader promise is still pending. Throws if used outside `<WhopElements>`. */
+export declare function useWhop(): Whop | null;
+
+/** Re-exported from the vanilla peer: the app's built locale set (default locale first) and its literal-union type. `includes()` narrows dynamic strings to `WhopElementsLocale`. */
+export { WHOP_ELEMENTS_LOCALES } from "@whop/elements";
+export type { WhopElementsLocale } from "@whop/elements";
+export type { Appearance, Theme, AccentColor, Classes, Variables, CSSProps, CSSValue } from "@whop/elements";
+
+export { Payments, usePayments, PaymentElement, AddressElement, CardElement, EmailElement, TaxIdElement, BrandingElement, CardFields, CardNumberElement, CardExpiryElement, CardCvcElement } from "./payments.js";
+export type { PaymentsHandle, PaymentsOptions, PaymentElementProps, PaymentElementCreateOptions, PaymentElementHandle, AddressElementProps, AddressElementCreateOptions, AddressElementHandle, CardElementProps, CardElementCreateOptions, CardElementHandle, EmailElementProps, EmailElementCreateOptions, EmailElementHandle, TaxIdElementProps, TaxIdElementCreateOptions, TaxIdElementHandle, BrandingElementProps, BrandingElementCreateOptions, BrandingElementHandle, CardFieldsSubOptions, CardFieldsSubHandle, CardNumberElementProps, CardNumberElementCreateOptions, CardNumberElementHandle, CardExpiryElementProps, CardExpiryElementCreateOptions, CardExpiryElementHandle, CardCvcElementProps, CardCvcElementCreateOptions, CardCvcElementHandle, WalletAvailability, CardNetworkArt, PaymentRequestLineItem, PaymentRequestShippingOption, PaymentRequestAddress, PaymentRequestResult, PaymentRequestError, PaymentRequestUpdate, ShippingAddressChangeEvent, ShippingOptionChangeEvent, BillingAddressChangeEvent } from "./payments.js";
+
+export { Verifications, useVerifications, KycElement, CapabilitiesElement, RfiElement } from "./verifications.js";
+export type { VerificationsHandle, VerificationsOptions, KycElementProps, KycElementCreateOptions, KycElementHandle, CapabilitiesElementProps, CapabilitiesElementCreateOptions, CapabilitiesElementHandle, RfiElementProps, RfiElementCreateOptions, RfiElementHandle, ActionRequiredItem } from "./verifications.js";
+
+export { Checkout, useCheckout, CheckoutElement, ExpressCheckoutElement } from "./checkout.js";
+export type { CheckoutHandle, CheckoutOptions, CheckoutElementProps, CheckoutElementCreateOptions, CheckoutElementHandle, ExpressCheckoutElementProps, ExpressCheckoutElementCreateOptions, ExpressCheckoutElementHandle, CheckoutItemInput, CheckoutAttributionInput } from "./checkout.js";
+
+export { Ads, useAds, BillingSetupElement, CampaignCreatorElement, Reporting, ChartElement, TableElement } from "./ads.js";
+export type { AdsHandle, AdsOptions, BillingSetupElementProps, BillingSetupElementCreateOptions, BillingSetupElementHandle, CampaignCreatorElementProps, CampaignCreatorElementCreateOptions, CampaignCreatorElementHandle, ReportingSubOptions, ReportingSubHandle, ChartElementProps, ChartElementCreateOptions, ChartElementHandle, TableElementProps, TableElementCreateOptions, TableElementHandle, CrossLinksConfig, AdsEditTarget, CustomMetricDefinition } from "./ads.js";
+
+export { Tracking, useTracking, PeopleElement, EventsElement, PersonElement } from "./tracking.js";
+export type { TrackingHandle, TrackingOptions, PeopleElementProps, PeopleElementCreateOptions, PeopleElementHandle, EventsElementProps, EventsElementCreateOptions, EventsElementHandle, PersonElementProps, PersonElementCreateOptions, PersonElementHandle, PeopleFilterBag, EventsFilterBag } from "./tracking.js";
+
+export { Wallet, useWallet, ActionsElement, ActivityElement, ActivityDetailElement, DepositElement, ConvertElement, WithdrawElement, SendElement, CardDetailsElement, Balances, BalanceElement, BreakdownElement, SettlementElement, ListElement, Reports, BalanceReportElement, ReportActivityElement, Cards, CardsElement, CardsTableElement, CardsChartElement, WhopCardElement, CardTransactionsElement } from "./wallet.js";
+export type { WalletHandle, WalletOptions, ActionsElementProps, ActionsElementCreateOptions, ActionsElementHandle, ActivityElementProps, ActivityElementCreateOptions, ActivityElementHandle, ActivityDetailElementProps, ActivityDetailElementCreateOptions, ActivityDetailElementHandle, DepositElementProps, DepositElementCreateOptions, DepositElementHandle, ConvertElementProps, ConvertElementCreateOptions, ConvertElementHandle, WithdrawElementProps, WithdrawElementCreateOptions, WithdrawElementHandle, SendElementProps, SendElementCreateOptions, SendElementHandle, CardDetailsElementProps, CardDetailsElementCreateOptions, CardDetailsElementHandle, BalancesSubOptions, BalancesSubHandle, BalanceElementProps, BalanceElementCreateOptions, BalanceElementHandle, BreakdownElementProps, BreakdownElementCreateOptions, BreakdownElementHandle, SettlementElementProps, SettlementElementCreateOptions, SettlementElementHandle, ListElementProps, ListElementCreateOptions, ListElementHandle, ReportsSubOptions, ReportsSubHandle, BalanceReportElementProps, BalanceReportElementCreateOptions, BalanceReportElementHandle, ReportActivityElementProps, ReportActivityElementCreateOptions, ReportActivityElementHandle, CardsSubOptions, CardsSubHandle, CardsElementProps, CardsElementCreateOptions, CardsElementHandle, CardsTableElementProps, CardsTableElementCreateOptions, CardsTableElementHandle, CardsChartElementProps, CardsChartElementCreateOptions, CardsChartElementHandle, WhopCardElementProps, WhopCardElementCreateOptions, WhopCardElementHandle, CardTransactionsElementProps, CardTransactionsElementCreateOptions, CardTransactionsElementHandle, ActivityDateRangeOverride, Money, LedgerActivity, DepositSavedCard, DepositCardFee, DepositRailFee, WithdrawalQuoteSpeed, WithdrawalQuote, WithdrawalMethod, WithdrawalRequiredField, WithdrawalSupportedMethod, WithdrawalLimits, WithdrawalMoney, WithdrawalPayoutQuote, WithdrawalRequest, WithdrawalCreateMethodInput, WithdrawalPayoutQuoteRequest, SendRecipient, Billing, ReportActivityFilters, ReportPaymentsRequest, ReportExportReady } from "./wallet.js";
+
+export { Websites, useWebsites, WebsitesElement, PixelSetupElement } from "./websites.js";
+export type { WebsitesHandle, WebsitesOptions, WebsitesElementProps, WebsitesElementCreateOptions, WebsitesElementHandle, PixelSetupElementProps, PixelSetupElementCreateOptions, PixelSetupElementHandle, PendingWebsite } from "./websites.js";
+
+export { Dashboard, useDashboard, RequiredActionsElement, VerificationElement, PaymentsTableElement, PaymentDetailElement } from "./dashboard.js";
+export type { DashboardHandle, DashboardOptions, RequiredActionsElementProps, RequiredActionsElementCreateOptions, RequiredActionsElementHandle, VerificationElementProps, VerificationElementCreateOptions, VerificationElementHandle, PaymentsTableElementProps, PaymentsTableElementCreateOptions, PaymentsTableElementHandle, PaymentDetailElementProps, PaymentDetailElementCreateOptions, PaymentDetailElementHandle } from "./dashboard.js";
+
+C:\SMART POINT\app>type node_modules\@whop\elements\index.d.ts
+import type { FrameworkGlobals, WhopElementsLocale } from "./_framework.js";
+import type { PaymentsHandle, PaymentsOptions, PaymentsStatics } from "./payments.js";
+import type { VerificationsHandle, VerificationsOptions, VerificationsStatics } from "./verifications.js";
+import type { CheckoutHandle, CheckoutOptions, CheckoutStatics } from "./checkout.js";
+import type { AdsHandle, AdsOptions, AdsStatics } from "./ads.js";
+import type { TrackingHandle, TrackingOptions, TrackingStatics } from "./tracking.js";
+import type { WalletHandle, WalletOptions, WalletStatics } from "./wallet.js";
+import type { WebsitesHandle, WebsitesOptions, WebsitesStatics } from "./websites.js";
+import type { DashboardHandle, DashboardOptions, DashboardStatics } from "./dashboard.js";
+
+/** Global configuration for `WhopElements(config)`, inherited by every namespace handle (`appearance`, `locale`, ÔÇª). */
+export interface WhopGlobalConfig extends FrameworkGlobals {}
+
+/** The configured instance: one accessor per namespace, each carrying `create()` plus that namespace's static actions. */
+export interface Whop {
+        /**
+         * Collect a payment from a `plan_` ID or inline currency and amount, or save a payment method without charging with `mode: "setup"`. Mount PaymentElement, CardElement, or CardFields, then call `payments.createConfirmationToken` with billing details. Wallet selections open their sheet automatically. Confirm the token server-side, then pass the payment's or setup intent's `client_secret` to `handleNextAction` for any pending step.
+         */
+        payments: { create(options: PaymentsOptions): PaymentsHandle } & PaymentsStatics;
+        /**
+         * Collects and verifies identity information for an account. Mount `kyc` for a complete KYC or KYB flow backed by the Verifications API.
+         */
+        verifications: { create(options: VerificationsOptions): VerificationsHandle } & VerificationsStatics;
+        /**
+         * Drives a full hosted checkout for one or more plans ÔÇö itemized price summary, promo codes, the currency the buyer pays in, and the whole payment collection surface (the payments elements, composed inside) ÔÇö against the Whop checkout sessions API. Mount it with `items`, a single `plan`, or a `checkoutConfiguration` you authored and the element opens the checkout session itself; the session credential never leaves the element. A setup-mode checkout configuration mounts the same element as a payment-method save: nothing is charged, the buyerÔÇÖs method is stored for you to charge later, and the finished checkout redirects with `setup_intent_id`. The buyer pays inside the element, and a finished checkout redirects the current tab to `returnUrl`, including the page that contains the element. Fulfill from webhooks rather than a browser callback. Without a `returnUrl`, the buyer rests on the elementÔÇÖs own success face. The element automatically drives an off-site payment step, such as 3DS or a bank page. On whop.com, it brings the buyer back into the restored checkout; in an embed, the buyer returns to the same `returnUrl`. A failed payment reopens the same checkout with the reason shown, so the buyer can pay again. Every option is set at creation: the element mints a checkout session from these values when it mounts. Changing one later with `update()` or new React props fails instead of changing the existing order. Mount a new checkout to change what is being purchased.
+         */
+        checkout: { create(options: CheckoutOptions): CheckoutHandle } & CheckoutStatics;
+        /**
+         * An advertising account. Scope it to a Whop account with `accountId` ÔÇö the ad account underneath is assigned server-side and never surfaces here ÔÇö then mount `reporting` for what the account spent and what came back, or `campaign-creator` to build a campaign.
+         */
+        ads: { create(options: AdsOptions): AdsHandle } & AdsStatics;
+        /**
+         * An account's tracked audience: everyone its pixel has seen, and every event they performed. Scope it to an account with `accountId`, then mount `people`, `events`, or both. They read the same window and the same credit rule, so two surfaces side by side can never disagree about what they are showing. `person` is where a click on either of them leads: one person's whole record, mountable inline or presentable over your page. `links` wires their person links to your own pages.
+         */
+        tracking: { create(options: TrackingOptions): TrackingHandle } & TrackingStatics;
+        /**
+         * Drives an account's money surfaces. `actions` renders the Deposit, Accept, Send, and Convert controls: Deposit, Send, and Convert open their Wallet overlays, while Accept opens Whop's checkout-link creator for a business account or company creation for a personal account. `deposit` returns live funding rails; `convert` swaps USD with Gold or Bitcoin and exposes FX currencies when the host enables `fxEnabled`; `send` moves money to a recipient or creates a public claim link; `withdraw` lists payout methods and creates the payout when the host does not already drive that API; `balances` holds two faces ÔÇö the holdings list, and the balance block drawing value over a window; `cards` is the compact issued-card list; `cardsTable` renders the full sortable card roster; `cardsChart` plots card spend; `whopCard` renders one revealable card; `activity` lists ledger movements; `activityDetail` renders a prefetched movement, or retrieves one by activity ID or card transaction ID, in a standalone drawer. The outstanding-action bar and the identity nudge live on the `dashboard` controller. Every data-backed surface can use the viewer's session when no token is provided.
+         */
+        wallet: { create(options: WalletOptions): WalletHandle } & WalletStatics;
+        /**
+         * An account's websites: every site built on whop.site plus every domain the Whop Pixel reports, with traffic and attributed revenue per domain. Mount `websites` and it lists them with visitors, page views, sales, revenue, trend, and most-viewed pages. Mount `pixel-setup` alongside it and a site whose pixel the wizard just proved live gets a waiting row automatically, because its first events take a few minutes to reach the stats API and the site would otherwise look lost ÔÇö you wire nothing up for that, and the row is kept on your page so it is still there if the merchant reloads. Reading stats is privileged, so it needs an `accessToken` ÔÇö except inside Whop's own app, where the viewer's session carries the read.
+         */
+        websites: { create(options: WebsitesOptions): WebsitesHandle } & WebsitesStatics;
+        /**
+         * An account's own dashboard surfaces, embedded on your site. Scope it to an account with `accountId`, then mount `paymentsTable` for the account's payments, `paymentDetail` for one payment, `required-actions` for the outstanding-action banners Whop's own dashboard shows above the balance ÔÇö identity verification, deposits, tax, and the rest ÔÇö and `verification` for the identity-only nudge. Every surface reads with the same credential, so two side by side always show the same account. The banners render nothing once the account has nothing outstanding, so they can sit permanently in a layout, and they report the presses they cannot answer themselves ÔÇö Add money and Verify ÔÇö so the host mounts its own deposit or verification flow, such as the `wallet` controller's `deposit` element or the `verifications` controller's `kyc` element.
+         */
+        dashboard: { create(options: DashboardOptions): DashboardHandle } & DashboardStatics;
+}
+
+/** The global `window.WhopElements`. Call it with the global config to get a `Whop` instance. */
+export interface WhopConstructor {
+        (config?: WhopGlobalConfig): Whop;
+}
+
+/** The hosted SDK bundle `loadWhop()` loads. The URL carries the release train, so it follows this package's major. */
+export declare const SDK_URL: string;
+
+/** The promise `loadWhop()` returns: the load itself, plus `retry()`, which starts a fresh load after a failure. While a load is in flight or has succeeded, `retry()` is that same load. */
+export type WhopLoad = Promise<WhopConstructor> & { retry(): WhopLoad };
+
+/** Load the hosted SDK: injects the `<script data-whop-elements>` tag once and resolves the global constructor. Safe to call any number of times: one script, one shared promise. A failed load is held, so every later call returns the same rejected promise and nothing retries on its own; call `retry()` on it to load again. */
+export declare function loadWhop(): WhopLoad;
+
+/** Resource hints (preconnect/preload) for the hosted SDK. Render them into `<head>` to start the fetch before `loadWhop()` runs. */
+export declare function preloadHints(): { rel: string; href: string; as?: string }[];
+
+/** The locales this app's elements are built with, the default locale first: exactly the values `locale` accepts. `includes()` accepts any string and narrows it to `WhopElementsLocale`, so use it to validate dynamic values; anything unlisted falls back to the default locale. */
+export declare const WHOP_ELEMENTS_LOCALES: readonly WhopElementsLocale[] & {
+        includes(value: string, fromIndex?: number): value is WhopElementsLocale;
+};
+
+export type { WhopElementsLocale };
+
+export type { Appearance, Theme, AccentColor, Classes, Variables, CSSProps, CSSValue, FrameworkGlobals } from "./_framework.js";
+
+C:\SMART POINT\app>type node_modules\@whop\elements-react\checkout.d.ts
+import type { CSSProperties, ReactNode, Ref } from "react";
+import type {
+        CheckoutHandle,
+        CheckoutOptions,
+        CheckoutElementProps,
+        CheckoutElementCreateOptions,
+        CheckoutElementHandle,
+        ExpressCheckoutElementProps,
+        ExpressCheckoutElementCreateOptions,
+        ExpressCheckoutElementHandle,
+        CheckoutItemInput,
+        CheckoutAttributionInput,
+} from "@whop/elements/checkout";
+export type {
+        CheckoutHandle,
+        CheckoutOptions,
+        CheckoutElementProps,
+        CheckoutElementCreateOptions,
+        CheckoutElementHandle,
+        ExpressCheckoutElementProps,
+        ExpressCheckoutElementCreateOptions,
+        ExpressCheckoutElementHandle,
+        CheckoutItemInput,
+        CheckoutAttributionInput,
+};
+type ElementProps<Options, Handle> = Options & {
+        /** The element's live handle (same surface as the vanilla `create` return). */
+        ref?: Ref<Handle>;
+        /** Applied to the element's mount container (the wrapper this component renders; the element itself lives in its own frame, see the Styling docs for restyling it). */
+        className?: string;
+        /** Applied to the element's mount container (the wrapper this component renders). */
+        style?: CSSProperties;
+        /** Shown until the element is fully loaded. When omitted, the element's own internal loading UI is shown instead. */
+        fallback?: ReactNode;
+};
+
+/**
+ * Drives a full hosted checkout for one or more plans ÔÇö itemized price summary, promo codes, the currency the buyer pays in, and the whole payment collection surface (the payments elements, composed inside) ÔÇö against the Whop checkout sessions API. Mount it with `items`, a single `plan`, or a `checkoutConfiguration` you authored and the element opens the checkout session itself; the session credential never leaves the element. A setup-mode checkout configuration mounts the same element as a payment-method save: nothing is charged, the buyerÔÇÖs method is stored for you to charge later, and the finished checkout redirects with `setup_intent_id`. The buyer pays inside the element, and a finished checkout redirects the current tab to `returnUrl`, including the page that contains the element. Fulfill from webhooks rather than a browser callback. Without a `returnUrl`, the buyer rests on the elementÔÇÖs own success face. The element automatically drives an off-site payment step, such as 3DS or a bank page. On whop.com, it brings the buyer back into the restored checkout; in an embed, the buyer returns to the same `returnUrl`. A failed payment reopens the same checkout with the reason shown, so the buyer can pay again. Every option is set at creation: the element mints a checkout session from these values when it mounts. Changing one later with `update()` or new React props fails instead of changing the existing order. Mount a new checkout to change what is being purchased.
+ * Provider component: creates the CheckoutHandle and drives the element components rendered as children. `fallback` shows until every child element has loaded (grouped); `ref` exposes the live handle. Unmounting it destroys the handle and everything it created.
+ * @example
+ * ```tsx
+ * import { WhopElements, Checkout, CheckoutElement, ExpressCheckoutElement } from "@whop/elements-react";
+ * import { loadWhop } from "@whop/elements";
+ *
+ * function Example() {
+ *   return (
+ *     <WhopElements elements={loadWhop()}>
+ *       <Checkout>
+ *         <CheckoutElement />
+ *         <ExpressCheckoutElement />
+ *       </Checkout>
+ *     </WhopElements>
+ *   );
+ * }
+ * ```
+ * @see https://docs.whop.com/elements/latest/checkout/overview
+ */
+export declare function Checkout(
+        props: CheckoutOptions & { children?: ReactNode; fallback?: ReactNode; ref?: Ref<{ handle: CheckoutHandle | null }> },
+): ReactNode;
+/**
+ * The nearest `<Checkout>` ancestor's live handle, `null` until it boots. Must be called under a `<Checkout>`.
+ * @see https://docs.whop.com/elements/latest/checkout/overview
+ */
+export declare function useCheckout(): CheckoutHandle | null;
+
+/**
+ * The full checkout surface ÔÇö order summary with the live quote, promo code entry, the currency the buyer pays in, everything this checkout has to collect from the buyer, the composed payment methods surface, and the pay flow. What it collects is whatever the seller set up (email, their own questions, a phone number, a shipping address for physical goods, an explicit agreement to their terms), rendered together on one screen in the order they chose ÔÇö so a seller who starts asking for something new needs no change here. Renders the whole purchase; the checkout controller owns the session and the credential. After a payment that needs an off-site step, this same surface renders the outcome the server reports when the buyer comes back.
+ * @example
+ * ```tsx
+ * import { WhopElements, Checkout, CheckoutElement } from "@whop/elements-react";
+ * import { loadWhop } from "@whop/elements";
+ *
+ * function Example() {
+ *   return (
+ *     <WhopElements elements={loadWhop()}>
+ *       <Checkout>
+ *         <CheckoutElement />
+ *       </Checkout>
+ *     </WhopElements>
+ *   );
+ * }
+ * ```
+ * @see https://docs.whop.com/elements/latest/checkout/checkout
+ */
+export declare function CheckoutElement(props: ElementProps<CheckoutElementCreateOptions, CheckoutElementHandle>): ReactNode;
+/**
+ * One-press Apple Pay and Google Pay buttons for a checkout ÔÇö the OS payment sheet collects whatever the session still needs (the buyer's email, a phone number where the seller collects one, a shipping address for physical goods, and in Apple Pay a promo code where the seller offers entry) and one press finishes the purchase. It shares the checkout's entry slot with the full checkout element, so a handle mounts exactly one of the two: this button alone where the purchase is simple enough for a sheet to finish, or the full checkout surface for everything else. Renders only the wallets the buyer's device can actually pay with ÔÇö and the checkout's own payment method configuration allows ÔÇö using the served button art, and renders nothing where no wallet is available. Both wallets require the page's domain to be a verified payment method domain: first-party whop.com pages are pre-approved, and any other site must register its domain through the Payment Method Domains API before either button renders there. Offering Google Pay on your own site is subject to the Google Pay API Terms of Service. A checkout the sheet cannot honestly finish ÔÇö a waitlist join, a transfer, a form question only a page can ask ÔÇö refuses loudly instead of rendering a doomed button.
+ * @example
+ * ```tsx
+ * import { WhopElements, Checkout, ExpressCheckoutElement } from "@whop/elements-react";
+ * import { loadWhop } from "@whop/elements";
+ *
+ * function Example() {
+ *   return (
+ *     <WhopElements elements={loadWhop()}>
+ *       <Checkout>
+ *         <ExpressCheckoutElement />
+ *       </Checkout>
+ *     </WhopElements>
+ *   );
+ * }
+ * ```
+ * @see https://docs.whop.com/elements/latest/checkout/expressCheckout
+ */
+export declare function ExpressCheckoutElement(props: ElementProps<ExpressCheckoutElementCreateOptions, ExpressCheckoutElementHandle>): ReactNode;
+
+C:\SMART POINT\app>
