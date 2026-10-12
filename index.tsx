@@ -102,15 +102,6 @@ export const Route = createFileRoute("/")({
    HERO VIDEO
    ========================================================= */
 
-/**
- * Place the video file here:
- *
- * public/assets/smart-point-hero.mp4
- *
- * If your video has another filename, change only this
- * constant.
- */
-
 const HERO_VIDEO_SRC =
   "/assets/smart-point-hero.mp4";
 
@@ -379,6 +370,7 @@ async function downloadTemplate(
     typeof useQueryClient
   >,
   userId: string,
+  isAuthenticated: boolean,
 ) {
   const templateId =
     template.id ??
@@ -391,6 +383,59 @@ async function downloadTemplate(
 
     return;
   }
+
+  /*
+   * =========================================================
+   * EXTERNAL VISITOR
+   * =========================================================
+   *
+   * IMPORTANT:
+   *
+   * We MUST NOT call /api/download here.
+   *
+   * The API endpoint redirects to Whop. If we call it with
+   * fetch(), the browser follows the redirect as a CORS
+   * request and Whop blocks it.
+   *
+   * Therefore external visitors navigate directly to Whop.
+   */
+
+  if (!isAuthenticated) {
+    const checkoutUrl =
+      new URL(
+        "https://whop.com/checkout/plan_5mxur1ghQi3Vk",
+      );
+
+    checkoutUrl.searchParams.set(
+      "smart_point_template_id",
+      String(templateId),
+    );
+
+    checkoutUrl.searchParams.set(
+      "smart_point_file_type",
+      format,
+    );
+
+    checkoutUrl.searchParams.set(
+      "smart_point_return_url",
+      `${window.location.origin}/`,
+    );
+
+    window.location.assign(
+      checkoutUrl.toString(),
+    );
+
+    return;
+  }
+
+
+  /*
+   * =========================================================
+   * AUTHENTICATED WHOP MEMBER
+   * =========================================================
+   *
+   * Existing Whop members can download normally.
+   */
 
   const toastId =
     "smart-point-download";
@@ -406,7 +451,7 @@ async function downloadTemplate(
     const response =
       await fetch(
         `/api/download?template_id=${encodeURIComponent(
-          templateId,
+          String(templateId),
         )}&file_type=${encodeURIComponent(
           format,
         )}`,
@@ -421,11 +466,13 @@ async function downloadTemplate(
       );
 
     /*
-     * External visitor:
+     * Safety fallback:
      *
-     * /api/download returns JSON telling the frontend
-     * to open the Whop checkout.
+     * If the API unexpectedly returns 401, support the
+     * checkout response without trying to parse a Whop
+     * redirect through fetch.
      */
+
     if (
       response.status === 401
     ) {
@@ -438,8 +485,9 @@ async function downloadTemplate(
           typeof data.checkout_url ===
             "string"
         ) {
-          window.location.href =
-            data.checkout_url;
+          window.location.assign(
+            data.checkout_url,
+          );
 
           return;
         }
@@ -447,6 +495,7 @@ async function downloadTemplate(
         // Continue with normal error handling.
       }
     }
+
 
     if (!response.ok) {
       let message =
@@ -489,11 +538,14 @@ async function downloadTemplate(
           }
         }
       } catch {
-        // Message par défaut conservé.
+        // Keep default error message.
       }
 
-      throw new Error(message);
+      throw new Error(
+        message,
+      );
     }
+
 
     const blob =
       await response.blob();
@@ -503,6 +555,7 @@ async function downloadTemplate(
         "Le fichier téléchargé est vide.",
       );
     }
+
 
     const disposition =
       response.headers.get(
@@ -532,6 +585,7 @@ async function downloadTemplate(
           filename;
       }
     }
+
 
     const objectUrl =
       URL.createObjectURL(
@@ -564,12 +618,14 @@ async function downloadTemplate(
       objectUrl,
     );
 
+
     toast.success(
       `${format.toUpperCase()} téléchargé avec succès.`,
       {
         id: toastId,
       },
     );
+
 
     await queryClient.invalidateQueries(
       {
@@ -659,6 +715,7 @@ function CategoryTile({
         </span>
 
         <span className="min-w-0">
+
           <span className="block truncate text-sm font-semibold">
             {category.name}
           </span>
@@ -669,7 +726,9 @@ function CategoryTile({
               ? "s"
               : ""}
           </span>
+
         </span>
+
       </div>
 
       <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -677,6 +736,7 @@ function CategoryTile({
           category,
         )}
       </p>
+
     </button>
   );
 }
@@ -689,28 +749,38 @@ function CategoryTile({
 function TemplateSkeleton() {
   return (
     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+
       {Array.from({
         length: 8,
       }).map((_, index) => (
+
         <div
           key={index}
           className="overflow-hidden rounded-xl border border-border bg-card"
         >
+
           <div className="aspect-[16/10] animate-pulse bg-muted" />
 
           <div className="space-y-3 p-4">
+
             <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
 
             <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
 
             <div className="flex gap-2">
+
               <div className="h-9 flex-1 animate-pulse rounded bg-muted" />
 
               <div className="h-9 flex-1 animate-pulse rounded bg-muted" />
+
             </div>
+
           </div>
+
         </div>
+
       ))}
+
     </div>
   );
 }
@@ -824,11 +894,11 @@ function HomePage() {
       }),
     );
 
+
   /*
-   * IMPORTANT:
-   *
    * External visitors must not query favorites.
    */
+
   const favorites =
     useQuery({
       ...favoritesQuery(
@@ -963,10 +1033,10 @@ function HomePage() {
     template: Template,
   ) {
     /*
-     * EXTERNAL VISITOR
-     *
-     * Never access or modify Supabase favorites.
+     * External visitor:
+     * Never access or modify favorites.
      */
+
     if (
       !user.isAuthenticated
     ) {
@@ -980,6 +1050,7 @@ function HomePage() {
       return;
     }
 
+
     const templateId =
       template.id ??
       template.template_id;
@@ -992,10 +1063,12 @@ function HomePage() {
       return;
     }
 
+
     const isFavorite =
       favoriteIds.has(
         String(templateId),
       );
+
 
     try {
       await toggleFavorite(
@@ -1064,6 +1137,7 @@ function HomePage() {
     );
 
     setSearch("");
+
     setSort("newest");
   }
 
@@ -1118,9 +1192,11 @@ function HomePage() {
         {/* Background glow */}
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
+
           <div className="absolute -right-20 -top-32 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
 
           <div className="absolute -bottom-40 right-20 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+
         </div>
 
 
@@ -1139,9 +1215,11 @@ function HomePage() {
               {/* Premium label */}
 
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+
                 <Sparkles className="h-3.5 w-3.5" />
 
                 Premium PowerPoint Library
+
               </div>
 
 
@@ -1241,8 +1319,6 @@ function HomePage() {
               "
             />
 
-            {/* Video overlay */}
-
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background/90 via-background/20 to-transparent" />
 
           </div>
@@ -1292,19 +1368,15 @@ function HomePage() {
                 )
               }
             >
-
               {showAllCategories
                 ? "Show less"
                 : "View all"}
-
             </Button>
 
           )}
 
         </div>
 
-
-        {/* CATEGORY LOADING */}
 
         {categories.isPending ? (
 
@@ -1506,8 +1578,6 @@ function HomePage() {
         </div>
 
 
-        {/* SEARCH STATUS */}
-
         {search && (
 
           <div className="mb-5 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
@@ -1628,12 +1698,6 @@ function HomePage() {
                           template
                         }
 
-                        /*
-                         * External visitors have no
-                         * favorites loaded, therefore
-                         * every heart is displayed as
-                         * not selected.
-                         */
                         isFavorite={
                           user.isAuthenticated &&
                           favoriteIds.has(
@@ -1651,6 +1715,14 @@ function HomePage() {
                           setPreview
                         }
 
+                        /*
+                         * IMPORTANT:
+                         * pass isAuthenticated so
+                         * downloadTemplate knows
+                         * whether to open Whop
+                         * directly or call the API.
+                         */
+
                         onDownload={(
                           item,
                           format,
@@ -1660,6 +1732,7 @@ function HomePage() {
                             format,
                             queryClient,
                             user.id,
+                            user.isAuthenticated,
                           )
                         }
                       />
@@ -1706,6 +1779,7 @@ function HomePage() {
             format,
             queryClient,
             user.id,
+            user.isAuthenticated,
           )
         }
       />

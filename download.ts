@@ -15,6 +15,12 @@ type TemplateRow = {
   is_active: boolean;
 };
 
+/**
+ * ============================================================
+ * ENVIRONMENT
+ * ============================================================
+ */
+
 const SUPABASE_URL =
   process.env["SUPABASE_URL"] ??
   "https://eejgfehjeqdwribhgfjm.supabase.co";
@@ -36,6 +42,12 @@ const GOOGLE_TOKEN_URL =
 
 const GOOGLE_DRIVE_SCOPE =
   "https://www.googleapis.com/auth/drive.readonly";
+
+/**
+ * Whop checkout used for external users.
+ */
+const WHOP_CHECKOUT_URL =
+  "https://whop.com/checkout/plan_5mxur1ghQi3Vk";
 
 /**
  * ============================================================
@@ -355,6 +367,49 @@ function buildFilename(
 
 /**
  * ============================================================
+ * CHECKOUT REDIRECT
+ * ============================================================
+ *
+ * Construit l'URL de checkout pour un utilisateur externe.
+ *
+ * Le checkout Whop doit être configuré côté Whop avec son
+ * "Redirect after checkout" vers l'application Smart Point.
+ *
+ * Le template_id et le file_type sont conservés afin de
+ * pouvoir retrouver le téléchargement demandé après paiement.
+ */
+
+function buildCheckoutUrl(
+  request: Request,
+  templateId: string,
+  fileType: FileType,
+): string {
+  const requestUrl =
+    new URL(request.url);
+
+  const checkoutUrl =
+    new URL(WHOP_CHECKOUT_URL);
+
+  checkoutUrl.searchParams.set(
+    "smart_point_template_id",
+    templateId,
+  );
+
+  checkoutUrl.searchParams.set(
+    "smart_point_file_type",
+    fileType,
+  );
+
+  checkoutUrl.searchParams.set(
+    "smart_point_return_url",
+    `${requestUrl.origin}/`,
+  );
+
+  return checkoutUrl.toString();
+}
+
+/**
+ * ============================================================
  * API ROUTE
  * ============================================================
  */
@@ -422,37 +477,51 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 2. Validate Whop identity
+             * 2. Resolve Whop identity
              * ------------------------------------------------
-             *
-             * L'identité vient du token Whop.
-             * Le navigateur ne peut pas choisir
-             * librement le member_id.
              */
 
             const identity =
               await resolveWhopIdentity();
 
+            /*
+             * ------------------------------------------------
+             * 3. External visitor
+             * ------------------------------------------------
+             *
+             * Pas de token Whop :
+             * on envoie l'utilisateur vers le checkout.
+             *
+             * IMPORTANT :
+             * le fichier n'est PAS téléchargé ici.
+             */
+
             if (!identity) {
-              return Response.json(
+              const checkoutUrl =
+                buildCheckoutUrl(
+                  request,
+                  templateId,
+                  fileType,
+                );
+
+              console.log(
+                "[Smart Point] External download request. Redirecting to Whop checkout.",
                 {
-                  error:
-                    "You must have a Whop account to download files.",
+                  templateId,
+                  fileType,
                 },
-                {
-                  status: 401,
-                },
+              );
+
+              return Response.redirect(
+                checkoutUrl,
+                303,
               );
             }
 
             /*
              * ------------------------------------------------
-             * 3. Validate Smart Point membership
+             * 4. Validate Smart Point membership
              * ------------------------------------------------
-             *
-             * Le catalogue et les aperçus restent accessibles.
-             * Seul le téléchargement nécessite
-             * une adhésion active à Smart Point.
              */
 
             const apiKey =
@@ -494,7 +563,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 4. Retrieve template from Supabase
+             * 5. Retrieve template from Supabase
              * ------------------------------------------------
              */
 
@@ -531,7 +600,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 5. Determine Google Drive file
+             * 6. Determine Google Drive file
              * ------------------------------------------------
              */
 
@@ -554,7 +623,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 6. Retrieve file from Google Drive
+             * 7. Retrieve file from Google Drive
              * ------------------------------------------------
              */
 
@@ -565,7 +634,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 7. Prepare filename
+             * 8. Prepare filename
              * ------------------------------------------------
              */
 
@@ -582,7 +651,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 8. Record download
+             * 9. Record download
              * ------------------------------------------------
              */
 
@@ -594,7 +663,7 @@ export const Route =
 
             /*
              * ------------------------------------------------
-             * 9. Return file to browser
+             * 10. Return file to browser
              * ------------------------------------------------
              *
              * L'URL Google Drive n'est jamais exposée.
