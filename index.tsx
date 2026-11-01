@@ -1,4 +1,4 @@
-import {
+﻿import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -70,7 +70,7 @@ export const Route = createFileRoute("/")({
     meta: [
       {
         title:
-          "Smart Point — Premium PowerPoint Templates",
+          "Smart Point â€” Premium PowerPoint Templates",
       },
       {
         name: "description",
@@ -80,7 +80,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:title",
         content:
-          "Smart Point — Premium PowerPoint Templates",
+          "Smart Point â€” Premium PowerPoint Templates",
       },
       {
         property: "og:description",
@@ -371,6 +371,10 @@ async function downloadTemplate(
   >,
   userId: string,
   isAuthenticated: boolean,
+  openExternalCheckout: (
+    templateId: string,
+    format: "pdf" | "pptx",
+  ) => void,
 ) {
   const templateId =
     template.id ??
@@ -401,28 +405,19 @@ async function downloadTemplate(
    */
 
   if (!isAuthenticated) {
-    const checkoutUrl =
-      new URL(
-        "https://whop.com/checkout/plan_5mxur1ghQi3Vk",
-      );
-
-    checkoutUrl.searchParams.set(
-      "smart_point_template_id",
+    /*
+     * External visitors use the Whop embedded checkout.
+     *
+     * Whop's external affiliate flow sends ?a=AFFILIATE_CODE
+     * to Smart Point. The checkout embed receives that code
+     * through data-whop-affiliate.
+     *
+     * Authenticated members continue to use /api/download
+     * below exactly as before.
+     */
+    openExternalCheckout(
       String(templateId),
-    );
-
-    checkoutUrl.searchParams.set(
-      "smart_point_file_type",
       format,
-    );
-
-    checkoutUrl.searchParams.set(
-      "smart_point_return_url",
-      `${window.location.origin}/`,
-    );
-
-    window.location.assign(
-      checkoutUrl.toString(),
     );
 
     return;
@@ -442,7 +437,7 @@ async function downloadTemplate(
 
   try {
     toast.loading(
-      `Préparation du ${format.toUpperCase()}...`,
+      `PrÃ©paration du ${format.toUpperCase()}...`,
       {
         id: toastId,
       },
@@ -499,7 +494,7 @@ async function downloadTemplate(
 
     if (!response.ok) {
       let message =
-        "Impossible de télécharger ce fichier.";
+        "Impossible de tÃ©lÃ©charger ce fichier.";
 
       try {
         const contentType =
@@ -552,7 +547,7 @@ async function downloadTemplate(
 
     if (blob.size === 0) {
       throw new Error(
-        "Le fichier téléchargé est vide.",
+        "Le fichier tÃ©lÃ©chargÃ© est vide.",
       );
     }
 
@@ -620,7 +615,7 @@ async function downloadTemplate(
 
 
     toast.success(
-      `${format.toUpperCase()} téléchargé avec succès.`,
+      `${format.toUpperCase()} tÃ©lÃ©chargÃ© avec succÃ¨s.`,
       {
         id: toastId,
       },
@@ -644,7 +639,7 @@ async function downloadTemplate(
     toast.error(
       error instanceof Error
         ? error.message
-        : "Impossible de télécharger le fichier.",
+        : "Impossible de tÃ©lÃ©charger le fichier.",
       {
         id: toastId,
       },
@@ -654,8 +649,176 @@ async function downloadTemplate(
 
 
 /* =========================================================
-   CATEGORY CARD
+   WHOP CHECKOUT
    ========================================================= */
+
+const WHOP_PLAN_ID =
+  "plan_5mxur1ghQi3Vk";
+
+const WHOP_CHECKOUT_LOADER_SRC =
+  "https://js.whop.com/static/checkout/loader.js";
+
+type CheckoutFormat =
+  | "pdf"
+  | "pptx";
+
+type ExternalCheckoutRequest = {
+  templateId: string;
+  format: CheckoutFormat;
+};
+
+function getAffiliateCode(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const params =
+    new URLSearchParams(
+      window.location.search,
+    );
+
+  const affiliate =
+    params.get("a")?.trim();
+
+  return affiliate
+    ? affiliate
+    : null;
+}
+
+function buildCheckoutReturnUrl(
+  templateId: string,
+  format: CheckoutFormat,
+): string {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const returnUrl =
+    new URL(
+      window.location.origin + "/",
+    );
+
+  returnUrl.searchParams.set(
+    "smart_point_template_id",
+    templateId,
+  );
+
+  returnUrl.searchParams.set(
+    "smart_point_file_type",
+    format,
+  );
+
+  const affiliate =
+    getAffiliateCode();
+
+  if (affiliate) {
+    returnUrl.searchParams.set(
+      "a",
+      affiliate,
+    );
+  }
+
+  return returnUrl.toString();
+}
+
+function WhopCheckoutOverlay({
+  request,
+  onClose,
+}: {
+  request: ExternalCheckoutRequest;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const existingScript =
+      document.querySelector(
+        `script[src="${WHOP_CHECKOUT_LOADER_SRC}"]`,
+      );
+
+    if (!existingScript) {
+      const script =
+        document.createElement(
+          "script",
+        );
+
+      script.src =
+        WHOP_CHECKOUT_LOADER_SRC;
+
+      script.async = true;
+      script.defer = true;
+
+      document.head.appendChild(
+        script,
+      );
+    }
+  }, []);
+
+  const affiliateCode =
+    getAffiliateCode();
+
+  const returnUrl =
+    buildCheckoutReturnUrl(
+      request.templateId,
+      request.format,
+    );
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Whop checkout"
+    >
+      <div className="relative flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold">
+              Complete your purchase
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Secure checkout powered by Whop
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="Close checkout"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5">
+          <div
+            className="whop-checkout-embed min-h-[620px] w-full"
+            data-whop-checkout-plan-id={
+              WHOP_PLAN_ID
+            }
+            data-whop-checkout-return-url={
+              returnUrl
+            }
+            data-whop-checkout-theme="system"
+            {...(
+              affiliateCode
+                ? {
+                    "data-whop-affiliate":
+                      affiliateCode,
+                  }
+                : {}
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* =========================================================
+   CATEGORY CARD
+   =========================================================
 
 function CategoryTile({
   category,
@@ -743,8 +906,92 @@ function CategoryTile({
 
 
 /* =========================================================
+   CATEGORY CARD
+   ========================================================= */
+
+function CategoryTile({
+  category,
+  count,
+  active,
+  onClick,
+}: {
+  category: Category;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const Icon =
+    getCategoryIcon(category);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "category-tile",
+        "group",
+        "relative",
+        "w-full",
+        "overflow-hidden",
+        "rounded-xl",
+        "border",
+        "p-4",
+        "text-left",
+        "transition-all",
+        active
+          ? "is-active border-primary/60 bg-primary/10"
+          : "border-border bg-surface hover:border-primary/50",
+      ].join(" ")}
+    >
+      <div className="flex items-start gap-3">
+
+        <span
+          className={[
+            "category-icon",
+            "grid",
+            "h-10",
+            "w-10",
+            "shrink-0",
+            "place-items-center",
+            "rounded-lg",
+            "text-white",
+            getCategoryTone(category),
+          ].join(" ")}
+        >
+          <Icon
+            className="h-5 w-5"
+            strokeWidth={2}
+          />
+        </span>
+
+        <span className="min-w-0">
+
+          <span className="block truncate text-sm font-semibold">
+            {category.name}
+          </span>
+
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {count} template
+            {count !== 1 ? "s" : ""}
+          </span>
+
+        </span>
+
+      </div>
+
+      <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+        {getCategoryDescription(category)}
+      </p>
+
+    </button>
+  );
+}
+
+
+/* =========================================================
    TEMPLATE SKELETON
    ========================================================= */
+
 
 function TemplateSkeleton() {
   return (
@@ -830,6 +1077,13 @@ function HomePage() {
     showAllCategories,
     setShowAllCategories,
   ] = useState(false);
+
+  const [
+    checkoutRequest,
+    setCheckoutRequest,
+  ] = useState<
+    ExternalCheckoutRequest | null
+  >(null);
 
 
   /* -------------------------------------------------------
@@ -1026,6 +1280,21 @@ function HomePage() {
 
 
   /* -------------------------------------------------------
+     WHOP CHECKOUT
+     ------------------------------------------------------- */
+
+  function openExternalCheckout(
+    templateId: string,
+    format: "pdf" | "pptx",
+  ) {
+    setCheckoutRequest({
+      templateId,
+      format,
+    });
+  }
+
+
+  /* -------------------------------------------------------
      FAVORITES
      ------------------------------------------------------- */
 
@@ -1041,7 +1310,7 @@ function HomePage() {
       !user.isAuthenticated
     ) {
       toast.info(
-        "Abonnez-vous à Smart Point pour ajouter des templates à vos favoris.",
+        "Abonnez-vous Ã  Smart Point pour ajouter des templates Ã  vos favoris.",
         {
           duration: 4000,
         },
@@ -1088,8 +1357,8 @@ function HomePage() {
 
       toast.success(
         isFavorite
-          ? "Retiré des favoris."
-          : "Ajouté aux favoris.",
+          ? "RetirÃ© des favoris."
+          : "AjoutÃ© aux favoris.",
       );
     } catch (error) {
       console.error(
@@ -1401,11 +1670,11 @@ function HomePage() {
 
             <p className="font-semibold">
               Impossible de charger les
-              catégories.
+              catÃ©gories.
             </p>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Vérifiez la connexion
+              VÃ©rifiez la connexion
               Supabase.
             </p>
 
@@ -1560,11 +1829,11 @@ function HomePage() {
                 </option>
 
                 <option value="az">
-                  Name A–Z
+                  Name Aâ€“Z
                 </option>
 
                 <option value="za">
-                  Name Z–A
+                  Name Zâ€“A
                 </option>
 
               </select>
@@ -1616,7 +1885,7 @@ function HomePage() {
             <p className="mt-2 text-sm text-muted-foreground">
               La connexion entre
               Smart Point et Supabase
-              doit être vérifiée.
+              doit Ãªtre vÃ©rifiÃ©e.
             </p>
 
             <Button
@@ -1626,7 +1895,7 @@ function HomePage() {
                 templates.refetch()
               }
             >
-              Réessayer
+              RÃ©essayer
             </Button>
 
           </div>
@@ -1650,7 +1919,7 @@ function HomePage() {
 
 
                 <h3 className="mt-4 font-semibold">
-                  Aucun template trouvé
+                  Aucun template trouvÃ©
                 </h3>
 
 
@@ -1669,7 +1938,7 @@ function HomePage() {
                     clearFilters
                   }
                 >
-                  Réinitialiser
+                  RÃ©initialiser
                 </Button>
 
               </div>
@@ -1733,6 +2002,7 @@ function HomePage() {
                             queryClient,
                             user.id,
                             user.isAuthenticated,
+                            openExternalCheckout,
                           )
                         }
                       />
@@ -1780,9 +2050,23 @@ function HomePage() {
             queryClient,
             user.id,
             user.isAuthenticated,
+            openExternalCheckout,
           )
         }
       />
+
+      {checkoutRequest && (
+        <WhopCheckoutOverlay
+          request={
+            checkoutRequest
+          }
+          onClose={() =>
+            setCheckoutRequest(
+              null,
+            )
+          }
+        />
+      )}
 
     </div>
   );
